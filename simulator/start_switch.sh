@@ -37,3 +37,4 @@ sleep 3
 $SDE/run_bfshell.sh -b $PROJECT_SRC/src/$PROGRAM/setup.py
 
 tmux attach-session -t switch
+

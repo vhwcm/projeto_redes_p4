@@ -49,7 +49,7 @@ parser SwitchIngressParser(packet_in pkt,
     /* Intrinsic */
     out ingress_intrinsic_metadata_t ig_intr_md)
 {
-    TofinoIngressParser() tofino_parser;
+    TofinoIngressParser() tofino_parser; // é quem vai fazer o parser inicial
 
     state start {
         tofino_parser.apply(pkt, ig_intr_md);
@@ -60,6 +60,14 @@ parser SwitchIngressParser(packet_in pkt,
         meta = {0, 0, 0, 0, 0};
         pkt.extract(hdr.ethernet);
         /* DICA: utilizar transition select */
+        transition select(hdr.ethernet.ether_type) {
+            0x1234: parse_secret; // indica que vai ter a secret, vai para o próximo estado
+            default: accept; // aqui vai aceitar nessa etapa, porém depois ficara como hdr.secret.isValid() = false
+        }
+    }
+
+    state parse_secret {
+        pkt.extract(hdr.secret); // extrai e monta o header secret
         transition accept;
     }
 }
@@ -101,6 +109,14 @@ parser SwitchEgressParser(packet_in pkt,
     state parse_ethernet {
         meta = {0, 0, 0, 0, 0};
         pkt.extract(hdr.ethernet);
+        transition select(hdr.ethernet.ether_type) { // switch para ver se vai parsear o secret (1234 tem que estar no header) ou aceitar e posteriormente rejeitar
+            0x1234: parse_secret;
+            default: accept;
+        }
+    }
+
+    state parse_secret { // estado de parser do secret
+        pkt.extract(hdr.secret);
         transition accept;
     }
 }

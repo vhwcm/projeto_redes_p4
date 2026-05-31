@@ -21,9 +21,14 @@ header ethernet_h {
     bit<16> ether_type;
 }
 
+header secret_h {
+    bit<8> op; // 1 byte
+    bit<128> token; // os 16 bytes 
+}
 
 struct header_t {
     ethernet_h ethernet;
+    secret_h secret; // Adcicionado header secret ao ao header principal
 }
 
 // Variáveis metadados auxiliares, caso ache necessário utilizá-las
