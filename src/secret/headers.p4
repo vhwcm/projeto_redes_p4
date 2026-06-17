@@ -23,7 +23,10 @@ header ethernet_h {
 
 header secret_h {
     bit<8> op; // 1 byte
-    bit<128> token; // os 16 bytes 
+    bit<32> token1;
+    bit<32> token2;
+    bit<32> token3;
+    bit<32> token4;
 }
 
 struct header_t {

@@ -53,15 +53,15 @@ control SwitchIngress(
     Register<bit<32>, bit<1>> (1) secret_v3;
     Register<bit<32>, bit<1>> (1) secret_v4;
 
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v1) write_v1 = { void apply(inout bit<32> value) { value = hdr.secret.token[127:96]; } };
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v2) write_v2 = { void apply(inout bit<32> value) { value = hdr.secret.token[95:64]; } };
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v3) write_v3 = { void apply(inout bit<32> value) { value = hdr.secret.token[63:32]; } };
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v4) write_v4 = { void apply(inout bit<32> value) { value = hdr.secret.token[31:0]; } };
+    RegisterAction<bit<32>, bit<1>, void>(secret_v1) write_v1 = { void apply(inout bit<32> value) { value = hdr.secret.token1; } };
+    RegisterAction<bit<32>, bit<1>, void>(secret_v2) write_v2 = { void apply(inout bit<32> value) { value = hdr.secret.token2; } };
+    RegisterAction<bit<32>, bit<1>, void>(secret_v3) write_v3 = { void apply(inout bit<32> value) { value = hdr.secret.token3; } };
+    RegisterAction<bit<32>, bit<1>, void>(secret_v4) write_v4 = { void apply(inout bit<32> value) { value = hdr.secret.token4; } };
 
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v1) read_v1 = { void apply(inout bit<32> value, out bit<32> rv) { rv = value; } };
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v2) read_v2 = { void apply(inout bit<32> value, out bit<32> rv) { rv = value; } };
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v3) read_v3 = { void apply(inout bit<32> value, out bit<32> rv) { rv = value; } };
-    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v4) read_v4 = { void apply(inout bit<32> value, out bit<32> rv) { rv = value; } };
+    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v1) check_v1 = { void apply(inout bit<32> value, out bit<32> rv) { if (value == hdr.secret.token1) { rv = 1; } else { rv = 0; } } };
+    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v2) check_v2 = { void apply(inout bit<32> value, out bit<32> rv) { if (value == hdr.secret.token2) { rv = 1; } else { rv = 0; } } };
+    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v3) check_v3 = { void apply(inout bit<32> value, out bit<32> rv) { if (value == hdr.secret.token3) { rv = 1; } else { rv = 0; } } };
+    RegisterAction<bit<32>, bit<1>, bit<32>>(secret_v4) check_v4 = { void apply(inout bit<32> value, out bit<32> rv) { if (value == hdr.secret.token4) { rv = 1; } else { rv = 0; } } };
 
     apply {
         if (hdr.secret.isValid()) {
@@ -69,16 +69,15 @@ control SwitchIngress(
                 write_v1.execute(0); write_v2.execute(0); write_v3.execute(0); write_v4.execute(0);
                 ig_dprsr_md.drop_ctl = 1; 
             } else if (hdr.secret.op == 2) {
-                meta.aux1 = read_v1.execute(0);
-                meta.aux2 = read_v2.execute(0);
-                meta.aux3 = read_v3.execute(0);
-                meta.aux4 = read_v4.execute(0);
+                meta.aux1 = check_v1.execute(0);
+                meta.aux2 = check_v2.execute(0);
+                meta.aux3 = check_v3.execute(0);
+                meta.aux4 = check_v4.execute(0);
                 
-                // os IFs aninhados para não exceder limites do PHV do hardware Tofino: é um problema que eu tive
-                if (meta.aux1 == hdr.secret.token[127:96]) { // verifica se secret é o mesmo do armazenado
-                    if (meta.aux2 == hdr.secret.token[95:64]) {
-                        if (meta.aux3 == hdr.secret.token[63:32]) {
-                            if (meta.aux4 == hdr.secret.token[31:0]) {
+                if (meta.aux1 == 1) { 
+                    if (meta.aux2 == 1) {
+                        if (meta.aux3 == 1) {
+                            if (meta.aux4 == 1) {
                                 forward.apply();
                             } else { ig_dprsr_md.drop_ctl = 1; }
                         } else { ig_dprsr_md.drop_ctl = 1; }
