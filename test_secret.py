@@ -222,6 +222,13 @@ def test_switching_matrix():
 
 if __name__ == "__main__":
     conf.use_pcap = True
+    
+    print("\n Inicializando sockets e interfaces (warm-up)...")
+    for _ in range(3):
+        dummy = Ether(dst="ff:ff:ff:ff:ff:ff", src=MAC_SEND, type=0x0800) / Raw(load=b"WARMUP")
+        send_packet(dummy, iface=IFACE_SEND, verbose=False)
+        time.sleep(0.5)
+
     test_scenario_1()
     time.sleep(1)
     test_scenario_2()
