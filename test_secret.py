@@ -217,6 +217,14 @@ def test_switching_matrix():
 
 if __name__ == "__main__":
     conf.use_pcap = True
+    import os
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    setup_script = os.path.join(project_dir, "src/secret/setup.py")
+    
+    print("\n Forcing switch setup via PTY...")
+    os.system(f'script -q -c "export SDE=/home/dev/open-p4studio && export SDE_INSTALL=/home/dev/open-p4studio/install && \\$SDE/run_bfshell.sh -b {setup_script}" /dev/null')
+    print(" Aguardando 5s para garantir a aplicação...")
+    time.sleep(5)
     
     print("\n Inicializando sockets e interfaces (warm-up)...")
     for _ in range(3):
