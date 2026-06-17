@@ -7,7 +7,6 @@ import threading
 from scapy.all import Ether, Raw, sendp, sniff, conf
 import struct
 
-# Configuração
 ETHER_TYPE_SECRET = 0x1234
 MAC_SEND = "00:00:00:00:00:01"
 MAC_RECV = "00:00:00:00:00:02"
@@ -17,7 +16,6 @@ IFACE_SEND = "veth0"
 IFACE_RECV = "veth8"
 IFACE_MON = "veth16"
 
-# Token secreto padrão (16 bytes = 128 bits)
 SECRET_TOKEN = b'\x00' * 16
 
 class SecretPacket:
@@ -57,7 +55,6 @@ def send_packet(pkt, iface=IFACE_SEND, verbose=True):
                 payload = load[17:]
                 print(f"       [Header Secret Enviado] OP: {op}, Token: {token}")
                 
-                # Remover bytes nulos para evitar SyntaxError no f-string
                 clean_payload = payload.replace(b'\x00', b'')
                 if clean_payload:
                     decoded_msg = clean_payload.decode('utf-8', errors='ignore')
@@ -119,7 +116,7 @@ def test_scenario_1():
     print("="*60)
     token = b'\x12\x34\x56\x78\x9a\xbc\xde\xf0' + b'\x00' * 8
     pkt = SecretPacket(op=1, token=token).to_packet(dst_mac=MAC_MON, src_mac=MAC_SEND)
-    # Esperado: DROP (nenhum pacote recebido em veth16)
+    # acho que aqui é esperado um DROP (nenhum pacote recebido em veth16)
     pkts = run_test_with_monitor(pkt, IFACE_SEND, IFACE_MON, MAC_MON)
     if not pkts:
         print("[RESULTADO] SUCESSO: Pacote descartado como esperado")
@@ -132,7 +129,7 @@ def test_scenario_2():
     print("="*60)
     token = b'\x12\x34\x56\x78\x9a\xbc\xde\xf0' + b'\x00' * 8
     pkt = SecretPacket(op=2, token=token).to_packet(dst_mac=MAC_RECV, src_mac=MAC_SEND, payload=b"MENSAGEM SECRETA AUTENTICADA")
-    # Esperado: PASS (recebido em veth8)
+    # acho que aqui é esperado um PASS (recebido em veth8)
     pkts = run_test_with_monitor(pkt, IFACE_SEND, IFACE_RECV, MAC_RECV)
     if pkts:
         print("[RESULTADO] SUCESSO: Pacote recebido com token correto")
@@ -145,7 +142,7 @@ def test_scenario_3():
     print("="*60)
     wrong_token = b'\xff' * 16
     pkt = SecretPacket(op=2, token=wrong_token).to_packet(dst_mac=MAC_RECV, src_mac=MAC_SEND)
-    # Esperado: DROP (nenhum pacote recebido em veth8)
+    # acho que aqui é esperado um DROP (nenhum pacote recebido em veth8)
     pkts = run_test_with_monitor(pkt, IFACE_SEND, IFACE_RECV, MAC_RECV)
     if not pkts:
         print("[RESULTADO] SUCESSO: Pacote com token errado descartado")
@@ -157,7 +154,7 @@ def test_scenario_4():
     print("TESTE 4: Pacote sem header secreto")
     print("="*60)
     pkt = Ether(dst=MAC_RECV, src=MAC_SEND, type=0x0800) / Raw(load=b"A"*50)
-    # Esperado: DROP
+    # acho que aqui é esperado um DROP
     pkts = run_test_with_monitor(pkt, IFACE_SEND, IFACE_RECV, MAC_RECV)
     if not pkts:
         print("[RESULTADO] SUCESSO: Pacote comum descartado")
@@ -170,7 +167,7 @@ def test_scenario_5():
     print("="*60)
     token = b'\x12\x34\x56\x78\x9a\xbc\xde\xf0' + b'\x00' * 8
     pkt = SecretPacket(op=99, token=token).to_packet(dst_mac=MAC_RECV, src_mac=MAC_SEND)
-    # Esperado: DROP
+    # acho que aqui é esperado um DROP
     pkts = run_test_with_monitor(pkt, IFACE_SEND, IFACE_RECV, MAC_RECV)
     if not pkts:
         print("[RESULTADO] SUCESSO: Operação inválida descartada")
@@ -182,7 +179,6 @@ def test_switching_matrix():
     print("TESTE EXTRA: Matriz de Comutação (Interface Entry -> Exit)")
     print("="*60)
     
-    # Mapeamento das interfaces e seus MACs configurados no setup.py
     interfaces = [
         {"iface": "veth0",  "mac": "00:00:00:00:00:01"},
         {"iface": "veth8",  "mac": "00:00:00:00:00:02"},
@@ -192,7 +188,6 @@ def test_switching_matrix():
     
     token = b'\x12\x34\x56\x78\x9a\xbc\xde\xf0' + b'\x00' * 8
     
-    # Primeiro, registrar o token enviando de veth0 (op=1)
     print("[*] Registrando token antes de iniciar a matriz...")
     reg_pkt = SecretPacket(op=1, token=token).to_packet(dst_mac=interfaces[2]["mac"], src_mac=interfaces[0]["mac"])
     send_packet(reg_pkt, iface=interfaces[0]["iface"], verbose=False)
@@ -239,7 +234,6 @@ if __name__ == "__main__":
     time.sleep(1)
     test_scenario_5()
     
-    # Novo teste de matriz
     test_switching_matrix()
     
     print("\n" + "="*60)
